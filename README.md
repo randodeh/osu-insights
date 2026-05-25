@@ -1,5 +1,7 @@
 # osu!insights
 
+> **Note:** This folder is the osu!insights project. Open this folder in VS Code and run `python app/flask_app.py` to start the app.
+
 A web-based analytics platform for osu! Standard players. Players can search any username to view their performance stats, compare against their rank tier average, and get personalised improvement suggestions. The system ingests data from the osu! API v2 and stores it in a PostgreSQL database.
 
 ---
