@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="max-width:400px;margin:80px auto;text-align:center">
+  <h1 style="margin-bottom:8px">Admin Access</h1>
+  <p class="page-sub" style="margin-bottom:24px">This area is restricted to administrators only.</p>
+
+  <form method="POST" action="/admin-login">
+    <div style="margin-bottom:12px">
+      <input class="search-input" type="password" name="password"
+             placeholder="Enter admin password…" autocomplete="off"
+             style="width:100%;text-align:center">
+    </div>
+    {% if error %}
+    <p style="color:#f85149;margin-bottom:12px;font-size:0.85rem">{{ error }}</p>
+    {% endif %}
+    <button class="btn-primary" type="submit" style="width:100%">Login</button>
+  </form>
+</div>
+
+{% endblock %}

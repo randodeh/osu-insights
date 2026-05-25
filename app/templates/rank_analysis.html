@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Rank Analysis</h1>
+<p class="page-sub">Aggregated statistics and distributions across all rank tiers.</p>
+
+<div class="tabs" id="analysisTabs">
+  <div class="tab active" data-tab="charts">Charts</div>
+  <div class="tab" data-tab="table">Tier Table</div>
+  <div class="tab" data-tab="mods">Mod Stats</div>
+</div>
+
+<!-- Charts panel -->
+<div class="tab-panel active" id="panel-charts">
+  {% if charts %}
+  <div class="grid-2" style="margin-bottom:16px">
+    {% if charts.pp %}
+    <div class="card">
+      <div class="card-label">Average PP per Tier</div>
+      <img src="data:image/png;base64,{{ charts.pp }}" style="width:100%;border-radius:4px;margin-top:8px">
+    </div>
+    {% endif %}
+    {% if charts.acc %}
+    <div class="card">
+      <div class="card-label">Average Accuracy per Tier</div>
+      <img src="data:image/png;base64,{{ charts.acc }}" style="width:100%;border-radius:4px;margin-top:8px">
+    </div>
+    {% endif %}
+  </div>
+  {% if charts.mods %}
+  <div class="card">
+    <div class="card-label">Score Count by Mod</div>
+    <img src="data:image/png;base64,{{ charts.mods }}" style="width:100%;max-width:700px;border-radius:4px;margin-top:8px">
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="placeholder">
+    <div class="placeholder-text">No chart data available</div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Tier table panel -->
+<div class="tab-panel" id="panel-table">
+  {% if tierData %}
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Tier</th>
+          <th>Players</th>
+          <th>Avg PP</th>
+          <th>Avg Accuracy</th>
+          <th>Avg Play Count</th>
+          <th>Avg Play Hours</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tierData %}
+        <tr>
+          <td><b>{{ t.rank_tier }}</b></td>
+          <td>{{ '{:,}'.format(t.player_count | int) }}</td>
+          <td>{{ '{:,.0f}'.format(t.avg_pp) }}pp</td>
+          <td>{{ t.avg_accuracy_pct }}%</td>
+          <td>{{ '{:,.0f}'.format(t.avg_play_count) }}</td>
+          <td>{{ t.avg_play_hours }}h</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="placeholder"><div class="placeholder-text">No tier data</div></div>
+  {% endif %}
+</div>
+
+<!-- Mod stats panel -->
+<div class="tab-panel" id="panel-mods">
+  {% if modData %}
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Mods</th>
+          <th>Total Scores</th>
+          <th>Avg PP</th>
+          <th>Avg Accuracy</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in modData %}
+        <tr>
+          <td><b>{{ m.mods or 'NM' }}</b></td>
+          <td>{{ '{:,}'.format(m.total_scores | int) }}</td>
+          <td>{{ m.avg_pp }}pp</td>
+          <td>{{ m.avg_accuracy_pct }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="placeholder"><div class="placeholder-text">No mod data</div></div>
+  {% endif %}
+</div>
+
+<script>
+document.querySelectorAll("#analysisTabs .tab").forEach(function(tab) {
+  tab.addEventListener("click", function() {
+    document.querySelectorAll("#analysisTabs .tab").forEach(function(t) { t.classList.remove("active"); });
+    document.querySelectorAll(".tab-panel").forEach(function(p) { p.classList.remove("active"); });
+    tab.classList.add("active");
+    document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
+  });
+});
+</script>
+{% endblock %}

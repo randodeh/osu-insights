@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Beatmap Explorer</h1>
+<p class="page-sub">Top {{ beatmaps | length }} beatmaps by average PP, with star rating analysis.</p>
+
+{% if chart %}
+<div class="card" style="margin-bottom:16px">
+  <div class="card-label">Star Rating vs Average PP</div>
+  <img src="data:image/png;base64,{{ chart }}" style="width:100%;max-width:800px;border-radius:4px;margin-top:8px">
+</div>
+{% endif %}
+
+<div class="card" style="padding:0;overflow:hidden">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Map</th>
+        <th>Stars</th>
+        <th>Avg PP</th>
+        <th>Total Scores</th>
+        <th>Avg Accuracy</th>
+        <th>Length</th>
+        <th>BPM</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in beatmaps %}
+      <tr>
+        <td>
+          <b>{{ b.title }}</b><br>
+          <span style="color:rgba(255,255,255,0.7);font-size:0.78rem">{{ b.artist }} — {{ b.version }}</span>
+        </td>
+        <td>{{ b.star_rating }}★</td>
+        <td><b>{{ '{:,.0f}'.format(b.avg_pp) if b.avg_pp else '—' }}pp</b></td>
+        <td>{{ '{:,}'.format(b.total_scores | int) }}</td>
+        <td>{{ b.avg_accuracy_pct }}%</td>
+        <td>{{ (b.length_seconds // 60)|int }}:{{ '%02d' % (b.length_seconds % 60) if b.length_seconds else '—' }}</td>
+        <td>{{ b.bpm | int if b.bpm else '—' }}</td>
+        <td><a href="https://osu.ppy.sh/beatmapsets/{{ b.beatmapset_id }}" target="_blank" class="btn-download">Download</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

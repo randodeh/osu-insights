@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+  <h1 style="margin-bottom:0">Admin</h1>
+  <a href="/admin-logout" class="btn-secondary" style="font-size:0.8rem;padding:6px 16px">Logout</a>
+</div>
+
+<div class="grid-3" style="margin-bottom:24px">
+  <div class="card" style="padding:20px 24px">
+    <div class="card-label">Total Players</div>
+    <div class="card-value">{{ stats.get('total_players', 0) | int | format_number }}</div>
+  </div>
+  <div class="card" style="padding:20px 24px">
+    <div class="card-label">Total Beatmaps</div>
+    <div class="card-value">{{ stats.get('total_beatmaps', 0) | int | format_number }}</div>
+  </div>
+  <div class="card" style="padding:20px 24px">
+    <div class="card-label">Total Scores</div>
+    <div class="card-value">{{ stats.get('total_scores', 0) | int | format_number }}</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Ingest player -->
+  <div class="card" style="padding:20px 24px">
+    <h2 style="margin-bottom:12px">Ingest Player</h2>
+    <p class="page-sub" style="margin-bottom:12px">Fetch a player and their top 100 scores from the osu! API.</p>
+    <div class="search-row" style="margin-bottom:12px;justify-content:center">
+      <input class="search-input" id="ingestInput" type="text" placeholder="Username…" autocomplete="off" style="background:rgba(120,60,180,0.25);border-color:rgba(120,60,180,0.6)">
+      <button id="ingestBtn" style="background:none;border:none;color:#fff;font-family:'Exo 2',sans-serif;font-weight:700;font-size:0.9rem;cursor:pointer;padding:6px 14px;border-radius:6px;transition:background 0.15s;text-shadow:0 1px 4px rgba(0,0,0,0.5)">Ingest</button>
+    </div>
+    <pre id="ingestLog" style="background:rgba(255,255,255,0.1);border-radius:6px;padding:10px;font-size:0.78rem;color:#fff;white-space:pre-wrap;word-break:break-all;display:none"></pre>
+  </div>
+
+  <!-- Refresh tiers -->
+  <div class="card" style="padding:20px 24px">
+    <h2 style="margin-bottom:12px">Refresh Tier Averages</h2>
+    <p class="page-sub" style="margin-bottom:12px">Recalculate all rank tier statistics from current player data.</p>
+    <button id="refreshTiersBtn" style="background:none;border:none;color:#fff;font-family:'Exo 2',sans-serif;font-weight:700;font-size:0.9rem;cursor:pointer;padding:6px 14px;border-radius:6px;transition:background 0.15s;text-shadow:0 1px 4px rgba(0,0,0,0.5)">Refresh Tiers</button>
+  </div>
+
+  <!-- Delete player -->
+  <div class="card" style="padding:20px 24px">
+    <h2 style="margin-bottom:8px">Remove Player</h2>
+    <p class="page-sub" style="margin-bottom:12px">Remove a player and all associated scores. Use for banned/cheating accounts or duplicate entries.</p>
+    <div style="margin-bottom:12px">
+      <select id="deleteReason" style="width:100%;padding:8px 12px;background:rgba(120,60,180,0.25);border:1px solid rgba(120,60,180,0.6);border-radius:6px;color:#fff;font-family:'Exo 2',sans-serif;margin-bottom:8px;text-shadow:0 1px 3px rgba(0,0,0,0.6)">
+        <option value="banned">Banned / cheating account</option>
+        <option value="duplicate">Duplicate entry</option>
+        <option value="request">Player removal request</option>
+      </select>
+    </div>
+    <div class="search-row" style="margin-bottom:0;justify-content:center">
+      <input class="search-input" id="deleteInput" type="text" placeholder="Username…" autocomplete="off" style="background:rgba(120,60,180,0.25);border-color:rgba(120,60,180,0.6)">
+      <button id="deleteBtn" style="background:none;border:none;color:#fff;font-family:'Exo 2',sans-serif;font-weight:700;font-size:0.9rem;cursor:pointer;padding:6px 14px;border-radius:6px;transition:background 0.15s;text-shadow:0 1px 4px rgba(0,0,0,0.5)">Remove</button>
+    </div>
+  </div>
+
+  <!-- Tier table -->
+  <div class="card" style="padding:20px 24px">
+    <h2 style="margin-bottom:12px">Tier Averages</h2>
+    {% if tierData %}
+    <table class="data-table">
+      <thead>
+        <tr><th>Tier</th><th>Players</th><th>Avg PP</th><th>Avg Acc</th></tr>
+      </thead>
+      <tbody>
+        {% for t in tierData %}
+        <tr>
+          <td><b>{{ t.rank_tier }}</b></td>
+          <td>{{ t.player_count }}</td>
+          <td>{{ '{:,.0f}'.format(t.avg_pp) if t.avg_pp else '—' }}pp</td>
+          <td>{{ t.avg_acc }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="placeholder"><div class="placeholder-text">No tier data</div></div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  #ingestBtn:hover, #refreshTiersBtn:hover, #deleteBtn:hover { color: #c084fc; }
+</style>
+
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Leaderboard</h1>
+<p class="page-sub">Top {{ players_list | length }} players sorted by {{ sort }}.</p>
+
+<div class="tabs" style="margin-bottom:16px">
+  <a href="/leaderboard?sort=pp"         class="tab {% if sort=='pp'         %}active{% endif %}">PP</a>
+  <a href="/leaderboard?sort=global_rank" class="tab {% if sort=='global_rank'%}active{% endif %}">Global Rank</a>
+  <a href="/leaderboard?sort=accuracy"   class="tab {% if sort=='accuracy'   %}active{% endif %}">Accuracy</a>
+  <a href="/leaderboard?sort=play_count" class="tab {% if sort=='play_count' %}active{% endif %}">Play Count</a>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Player</th>
+        <th>Tier</th>
+        <th>Global Rank</th>
+        <th>PP</th>
+        <th>Accuracy</th>
+        <th>Play Count</th>
+        <th>Country</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in players_list %}
+      <tr>
+        <td style="color:#8b949e">{{ loop.index }}</td>
+        <td><b>{{ p.username }}</b></td>
+        <td>{{ p.rank_tier }}</td>
+        <td>#{{ '{:,}'.format(p.global_rank) if p.global_rank else '·' }}</td>
+        <td><b>{{ '{:,.0f}'.format(p.pp) if p.pp else '·' }}pp</b></td>
+        <td>{{ p.accuracy_pct }}%</td>
+        <td>{{ '{:,}'.format(p.play_count) if p.play_count else '·' }}</td>
+        <td>{{ p.country_code }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

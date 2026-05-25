@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>osu!insights</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;900&family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- Background -->
+<div class="osu-bg"></div>
+
+<!-- Top bar -->
+<header class="top-bar">
+  <a href="/" class="top-bar-logo">
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="osu!insights">
+  </a>
+  <div class="top-bar-info">
+    <div class="top-bar-name">osu!insights</div>
+    <div class="top-bar-stats">
+      {{ stats.get('total_players', 0) | int | format_number }} players &nbsp;·&nbsp;
+      {{ stats.get('total_beatmaps', 0) | int | format_number }} beatmaps &nbsp;·&nbsp;
+      {{ stats.get('total_scores', 0) | int | format_number }} scores
+    </div>
+  </div>
+
+  <!-- Top right controls -->
+  <div class="top-controls" style="flex-direction:column;align-items:flex-end;gap:2px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="ctrl-btn" id="btnPrev" title="Previous player">
+        <img src="{{ url_for('static', filename='img/backward.png') }}" alt="prev">
+      </button>
+      <button class="ctrl-btn" id="btnPause" title="Pause/Resume">
+        <img src="{{ url_for('static', filename='img/pause.png') }}" alt="pause" id="pauseImg">
+      </button>
+      <button class="ctrl-btn" id="btnNext" title="Next player">
+        <img src="{{ url_for('static', filename='img/forward.png') }}" alt="next">
+      </button>
+      <div class="ctrl-divider"></div>
+      <button class="ctrl-btn" id="btnMenu" title="Menu">
+        <img src="{{ url_for('static', filename='img/menu.png') }}" alt="menu">
+      </button>
+    </div>
+    <div class="top-bar-stats" style="align-self:flex-start">cycle through top players</div>
+  </div>
+</header>
+
+<!-- Main content -->
+<main class="main-content">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- Bottom bar -->
+<footer class="bottom-bar">
+  <nav class="bottom-nav">
+    <a href="/improve" class="bottom-nav-btn {% if request.path == '/improve' %}active{% endif %}" title="Improve">
+      <div class="bottom-nav-icon">▲</div>
+      <div class="bottom-nav-label">Improve</div>
+    </a>
+    <a href="/rank-analysis" class="bottom-nav-btn {% if request.path == '/rank-analysis' %}active{% endif %}" title="Rank Analysis">
+      <div class="bottom-nav-icon">≡</div>
+      <div class="bottom-nav-label">Ranks</div>
+    </a>
+    <a href="/beatmaps" class="bottom-nav-btn {% if request.path == '/beatmaps' %}active{% endif %}" title="Beatmap Explorer">
+      <div class="bottom-nav-icon">♪</div>
+      <div class="bottom-nav-label">Maps</div>
+    </a>
+    <a href="/admin" class="bottom-nav-btn {% if request.path == '/admin' %}active{% endif %}" title="Admin">
+      <div class="bottom-nav-icon">◈</div>
+      <div class="bottom-nav-label">Admin</div>
+    </a>
+  </nav>
+  <div class="player-card" id="playerCard">
+    <img src="" alt="" id="playerAvatar" class="player-avatar">
+    <div>
+      <div class="player-name" id="playerName">—</div>
+      <div class="player-pp"   id="playerPP">—</div>
+      <div class="player-rank" id="playerRank">—</div>
+    </div>
+  </div>
+</footer>
+
+<!-- Player list overlay -->
+<div class="player-overlay" id="playerOverlay">
+  <div class="overlay-header">
+    <span class="overlay-title">Players</span>
+    <button class="overlay-close" id="btnClose">
+      <img src="{{ url_for('static', filename='img/close.png') }}" alt="close" style="height:28px;opacity:0.7;display:block">
+    </button>
+  </div>
+  <div class="overlay-divider"></div>
+  <div class="overlay-list" id="overlayList">
+    {% for p in players %}
+    <div class="overlay-item" data-username="{{ p.username }}">
+      <div class="overlay-item-name">{{ p.username }}</div>
+      <div class="overlay-item-sub">{{ '{:,.0f}'.format(p.pp) }}pp &nbsp;·&nbsp; #{{ '{:,}'.format(p.global_rank) }} &nbsp;·&nbsp; {{ p.rank_tier }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+  const PAUSE_IMG = "{{ url_for('static', filename='img/pause.png') }}";
+  const PLAY_IMG  = "{{ url_for('static', filename='img/play.png') }}";
+  const PLAYERS   = {{ players | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

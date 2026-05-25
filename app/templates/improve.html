@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Improvement Coach</h1>
+<p class="page-sub">Search your username to get personalised improvement tips based on your data.</p>
+
+<form id="improveSearchForm" style="display:flex;gap:8px;margin-bottom:24px">
+  <div class="search-wrapper" style="flex:1">
+    <img class="search-icon" src="/static/img/search.png" alt="">
+    <input id="improveSearchInput" class="search-input" type="text" placeholder="Search player…" autocomplete="off">
+  </div>
+</form>
+
+<div id="improveResult">
+  <div class="placeholder">
+    <div class="placeholder-text">Search a player to see their improvement report</div>
+  </div>
+</div>
+
+<script>
+document.getElementById("improveSearchForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  var val = document.getElementById("improveSearchInput").value.trim();
+  if (!val) return;
+  loadImprovePlayer(val);
+});
+
+function loadImprovePlayer(username) {
+  var result = document.getElementById("improveResult");
+  result.innerHTML = '<div class="loading"><div class="spinner"></div>Analysing...</div>';
+
+  var key = username.toLowerCase();
+  if (typeof playerCache !== "undefined" && playerCache[key]) {
+    if (typeof pauseCycler !== "undefined") pauseCycler();
+    var cp = playerCache[key].player;
+    if (typeof showPlayerCard !== "undefined") showPlayerCard({ userid: cp.userid, username: cp.username, pp: cp.pp, global_rank: cp.global_rank, rank_tier: cp.rank_tier });
+    renderImprove(playerCache[key], result);
+    return;
+  }
+
+  fetch("/api/player/" + encodeURIComponent(username))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) {
+        result.innerHTML = '<div class="placeholder"><div class="placeholder-text">Player not found</div></div>';
+        return;
+      }
+      if (typeof playerCache !== "undefined") playerCache[key] = data;
+      if (typeof pauseCycler !== "undefined") pauseCycler();
+      if (typeof showPlayerCard !== "undefined") showPlayerCard({ userid: data.player.userid, username: data.player.username, pp: data.player.pp, global_rank: data.player.global_rank, rank_tier: data.player.rank_tier });
+      renderImprove(data, result);
+    })
+    .catch(function(err) {
+      result.innerHTML = '<div class="placeholder"><div class="placeholder-text">Error: ' + err.message + '</div></div>';
+    });
+}
+
+function renderImprove(data, container) {
+  var p = data.player;
+  var c = data.coach;
+  var scores = data.scores || [];
+
+  var tips = [];
+
+  if (c) {
+    if (c.pp_status === "Needs Work") {
+      tips.push({ label: "PP", text: "Down " + Math.abs(c.pp_vs_avg) + "pp from your tier average. Check the PP Farm maps below,those are maps your tier is farming that you haven't played yet." });
+    } else if (c.pp_status === "Above Average") {
+      tips.push({ label: "PP", text: "You're " + c.pp_vs_avg + "pp ahead of your tier. Start pushing higher star maps to keep the gap growing." });
+    } else {
+      tips.push({ label: "PP", text: "Right around your tier average. The PP Farm maps below are worth a look if you want to get ahead." });
+    }
+
+    if (c.acc_status === "Needs Work") {
+      tips.push({ label: "Accuracy", text: "Sitting " + Math.abs(c.acc_vs_avg) + "% below your tier average. Try dropping half a star and focusing on clean hits,accuracy pp adds up fast once you sort it." });
+    } else if (c.acc_status === "Above Average") {
+      tips.push({ label: "Accuracy", text: "Accuracy is solid, you're ahead of your tier. That means you can push harder maps without worrying too much about misses." });
+    } else {
+      tips.push({ label: "Accuracy", text: "Accuracy is average. Even small gains on maps you've already played can push your PP without having to grind new ones." });
+    }
+
+    if (c.play_count_status === "Needs Work") {
+      tips.push({ label: "Volume", text: "Play count is lower than most at your tier. More time on the game means better reading and muscle memory,it just takes hours." });
+    }
+  }
+
+  if (scores.length > 0) {
+    var totalStars = 0;
+    var validScores = 0;
+    scores.forEach(function(s) {
+      if (s.star_rating) { totalStars += parseFloat(s.star_rating); validScores++; }
+    });
+    if (validScores > 0) {
+      var avgStars = (totalStars / validScores).toFixed(1);
+      var targetStars = (parseFloat(avgStars) + 0.5).toFixed(1);
+      tips.push({ label: "Star Rating", text: "Top plays average " + avgStars + " stars. Try some " + targetStars + " star maps and see how they feel,that's probably where your next PP jump is." });
+    }
+
+    var modCounts = {};
+    scores.forEach(function(s) { var m = s.mods || "NM"; modCounts[m] = (modCounts[m] || 0) + 1; });
+    var topMod = Object.keys(modCounts).sort(function(a,b) { return modCounts[b]-modCounts[a]; })[0];
+    if (topMod === "NM" || topMod === "") {
+      tips.push({ label: "Mods", text: "All your top plays are NoMod. HD gives a 1.06x PP multiplier and your eyes adjust to it pretty fast,worth trying." });
+    } else {
+      tips.push({ label: "Mods", text: "You mostly play " + topMod + ". Stick with what works, but trying other mods can open up more farm maps." });
+    }
+  }
+
+  var html = '<div class="profile-header" style="position:relative;margin-bottom:24px">'
+    + '<div class="player-bg-glow"><img src="https://a.ppy.sh/' + p.userid + '" alt=""></div>'
+    + '<img src="https://a.ppy.sh/' + p.userid + '" class="profile-avatar" alt="' + p.username + '">'
+    + '<div style="position:relative;z-index:2"><div class="profile-username">' + p.username + '</div>'
+    + '<div class="profile-sub">' + p.country_code + ' · Rank #' + Number(p.global_rank).toLocaleString("en-GB") + ' · ' + p.rank_tier + '</div>'
+    + '</div></div>';
+
+  html += '<h2 style="margin-bottom:16px">Personalised Tips</h2>';
+  html += '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px">';
+  tips.forEach(function(tip) {
+    html += '<div style="display:flex;align-items:flex-start;gap:16px;background:rgba(26,10,46,0.5);border:1px solid rgba(255,102,171,0.15);border-radius:10px;padding:14px 18px">'
+      + '<span style="font-family:\'Exo 2\',sans-serif;font-weight:900;color:#ff66ab;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;min-width:80px;padding-top:2px">' + tip.label + '</span>'
+      + '<span style="color:#fff;font-size:0.9rem;line-height:1.5">' + tip.text + '</span>'
+      + '</div>';
+  });
+  html += '</div>';
+
+  html += '<div class="tabs" id="improveTabs">'
+    + '<div class="tab active" data-tab="ppfarm">PP Farm Maps</div>'
+    + '<div class="tab" data-tab="accuracy">Accuracy Improvements</div>'
+    + '</div>';
+
+  html += '<div class="tab-panel active" id="panel-ppfarm">';
+  if (data.ppRecs && data.ppRecs.length) {
+    html += '<table class="data-table"><thead><tr><th>Map</th><th>Stars</th><th>Avg PP at Tier</th><th>Tier Plays</th><th></th></tr></thead><tbody>';
+    data.ppRecs.forEach(function(r) {
+      html += '<tr><td><b>' + r.title + '</b><br><span style="color:rgba(255,255,255,0.7);font-size:0.78rem">' + r.artist + ' · ' + r.version + '</span></td>'
+        + '<td>' + r.star_rating + '★</td>'
+        + '<td><b>' + Number(r.avg_pp_at_tier).toLocaleString("en-GB", {maximumFractionDigits:0}) + 'pp</b></td>'
+        + '<td>' + r.times_scored + '</td>'
+        + '<td><a href="https://osu.ppy.sh/b/' + r.beatmap_id + '" target="_blank" class="btn-download">Download</a></td></tr>';
+    });
+    html += '</tbody></table>';
+  } else {
+    html += '<div class="placeholder"><div class="placeholder-text">No recommendations available for this tier yet</div></div>';
+  }
+  html += '</div>';
+
+  html += '<div class="tab-panel" id="panel-accuracy">';
+  if (data.accRecs && data.accRecs.length) {
+    html += '<table class="data-table"><thead><tr><th>Map</th><th>Your PP</th><th>Your Acc</th><th>Tier Avg PP</th><th>Potential Gain <span title="How much more PP players at your tier average on this map vs your current score. Improve your accuracy or combo on this map to close the gap." style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1px solid rgba(255,255,255,0.4);font-size:0.65rem;color:rgba(255,255,255,0.5);cursor:help;vertical-align:middle;margin-left:4px">i</span></th><th></th></tr></thead><tbody>';
+    data.accRecs.forEach(function(r) {
+      html += '<tr><td><b>' + r.title + '</b><br><span style="color:rgba(255,255,255,0.7);font-size:0.78rem">' + r.artist + ' · ' + r.version + '</span></td>'
+        + '<td>' + r.current_pp + 'pp</td>'
+        + '<td>' + r.current_acc_pct + '%</td>'
+        + '<td>' + r.avg_pp_at_tier + 'pp</td>'
+        + '<td style="color:#56d364">+' + r.potential_pp_gain + 'pp</td>'
+        + '<td><a href="https://osu.ppy.sh/b/' + r.beatmap_id + '" target="_blank" class="btn-download">Download</a></td></tr>';
+    });
+    html += '</tbody></table>';
+  } else if (!data.hasScores) {
+    html += '<div class="card" style="text-align:center;padding:24px 20px">'
+      + '<div style="color:rgba(255,255,255,0.7);margin-bottom:14px;font-size:0.9rem">Load this player\'s top scores to see accuracy improvement suggestions.</div>'
+      + '<button class="btn-download" id="loadScoresBtn" style="background:#ff66ab;border:none;cursor:pointer;padding:8px 20px;border-radius:6px;color:#fff;font-family:\'Exo 2\',sans-serif;font-weight:700;font-size:0.85rem" onclick="loadScores(\'' + p.username + '\')">Load Scores</button>'
+      + '<div id="loadScoresStatus" style="margin-top:10px;font-size:0.8rem;color:rgba(255,255,255,0.5)"></div>'
+      + '</div>';
+  } else {
+    html += '<div class="placeholder"><div class="placeholder-text">Your accuracy is already above the tier average on all played maps.</div></div>';
+  }
+  html += '</div>';
+
+  container.innerHTML = html;
+
+  container.querySelectorAll("#improveTabs .tab").forEach(function(tab) {
+    tab.addEventListener("click", function() {
+      container.querySelectorAll("#improveTabs .tab").forEach(function(t) { t.classList.remove("active"); });
+      container.querySelectorAll(".tab-panel").forEach(function(p) { p.classList.remove("active"); });
+      tab.classList.add("active");
+      container.querySelector("#panel-" + tab.dataset.tab).classList.add("active");
+    });
+  });
+}
+
+function loadScores(username) {
+  var btn = document.getElementById("loadScoresBtn");
+  var status = document.getElementById("loadScoresStatus");
+  if (btn) btn.disabled = true;
+  if (status) status.textContent = "Fetching scores from osu! API...";
+  fetch("/api/ingest-player", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: username })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      if (status) status.textContent = "Done! Reloading...";
+      if (typeof playerCache !== "undefined") delete playerCache[username.toLowerCase()];
+      setTimeout(function() { loadImprovePlayer(username); }, 800);
+    } else {
+      if (status) status.textContent = "Error: " + (data.error || "Unknown error");
+      if (btn) btn.disabled = false;
+    }
+  })
+  .catch(function(err) {
+    if (status) status.textContent = "Error: " + err.message;
+    if (btn) btn.disabled = false;
+  });
+}
+</script>
+
+{% endblock %}
